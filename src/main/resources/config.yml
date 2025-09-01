@@ -7,5 +7,5 @@ banned-words:
   - cheat
   - exploit
 
-alert-prefix: "[ChatTracker]"
+lert-prefix: "§c⚠ [BigBrother]"   # Red text with warning symbol
 log-flagged-messages: true
