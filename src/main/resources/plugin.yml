@@ -1,0 +1,9 @@
+name: chattracker
+version: '1.0-SNAPSHOT'
+main: yomikey.chattracker.Chattracker
+api-version: '1.21'
+
+commands:
+  chattracker:
+    description: Test command for the ChatTracker plugin
+    usage: /chattracker
