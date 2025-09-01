@@ -11,6 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public final class Chattracker extends JavaPlugin implements Listener {
 
@@ -22,15 +23,27 @@ public final class Chattracker extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
 
         // Ensure data folder exists
-        if (!getDataFolder().exists()) {
-            getDataFolder().mkdirs();
+        File dataFolder = getDataFolder();
+        if (!dataFolder.exists()) {
+            if (!dataFolder.mkdirs()) {
+                getLogger().warning("Failed to create plugin data folder!");
+            }
         }
 
-        // Register /chattracker command
-        this.getCommand("chattracker").setExecutor((sender, command, label, args) -> {
-            sender.sendMessage("§aChatTracker is working!");
-            return true;
-        });
+        // Register /chattracker command safely
+        if (this.getCommand("chattracker") != null) {
+            this.getCommand("chattracker").setExecutor((sender, command, label, args) -> {
+                sender.sendMessage("§aChatTracker is working!");
+                return true;
+            });
+        } else {
+            getLogger().warning("Command /chattracker is not defined in plugin.yml!");
+        }
+
+
+
+        // Ensure config is loaded
+        saveDefaultConfig();
     }
 
     // Log when a player joins
@@ -41,40 +54,59 @@ public final class Chattracker extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
-        // Step 1: Get the message and player
         String playerName = event.getPlayer().getName();
         String message = event.getMessage();
-
-        // Step 2: Create timestamp
         String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-
-        // Step 3: Format the message for logging
         String formatted = "[" + time + "] " + playerName + ": " + message;
 
-        // Step 4: Log to console
+        // Log to console
         getLogger().info(formatted);
 
-        // Step 5: Save to file
         try {
             File folder = new File(getDataFolder(), "chatlogs");
-            if (!folder.exists()) {
-                if (!folder.mkdirs()) {
-                    getLogger().warning("Failed to create chatlogs folder!");
-                }
+            if (!folder.exists() && !folder.mkdirs()) {
+                getLogger().warning("Failed to create chatlogs folder!");
             }
+
             // Daily log file
             String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             File logFile = new File(folder, "chatlog-" + date + ".txt");
+            try (FileWriter writer = new FileWriter(logFile, true)) {
+                writer.write(formatted + "\n");
+            }
 
-            FileWriter writer = new FileWriter(logFile, true); // true = append
-            writer.write(formatted + "\n");
-            writer.close();
+            // Check for banned words
+            List<String> bannedWords = getConfig().getStringList("banned-words");
+            boolean flagged = false;
+            for (String word : bannedWords) {
+                if (message.toLowerCase().contains(word.toLowerCase())) {
+                    flagged = true;
+                    break;
+                }
+            }
+
+            if (flagged) {
+                // Notify moderators
+                getServer().getOnlinePlayers().forEach(p -> {
+                    if (p.hasPermission("chattracker.moderate")) {
+                        p.sendMessage("§c[ChatTracker] Potential abuse by " + playerName + ": " + message);
+                    }
+                });
+
+                // Log flagged messages
+                File flaggedFile = new File(folder, "flags-" + date + ".txt");
+                try (FileWriter flaggedWriter = new FileWriter(flaggedFile, true)) {
+                    flaggedWriter.write(formatted + "\n");
+                }
+            }
+
         } catch (IOException e) {
-            e.printStackTrace();
+            getLogger().severe("An error occurred while writing to chat logs: " + e.getMessage());
+
         }
     }
-
 }
+
 
 
 
