@@ -1,0 +1,11 @@
+banned-words:
+  - fudge
+  - dang
+  - shoot
+  - spamword
+  - troll
+  - cheat
+  - exploit
+
+alert-prefix: "[ChatTracker]"
+log-flagged-messages: true
