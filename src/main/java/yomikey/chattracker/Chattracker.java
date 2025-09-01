@@ -57,8 +57,11 @@ public final class Chattracker extends JavaPlugin implements Listener {
         // Step 5: Save to file
         try {
             File folder = new File(getDataFolder(), "chatlogs");
-            if (!folder.exists()) folder.mkdirs(); // create folder if missing
-
+            if (!folder.exists()) {
+                if (!folder.mkdirs()) {
+                    getLogger().warning("Failed to create chatlogs folder!");
+                }
+            }
             // Daily log file
             String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             File logFile = new File(folder, "chatlog-" + date + ".txt");
