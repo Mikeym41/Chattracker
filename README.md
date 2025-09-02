@@ -17,9 +17,9 @@ But here’s the cool part: it has a feature called Big Brother, not creepy, jus
 Everything it flags gets logged separately too, so you can go back and see exactly what was said and when. And the words it flags? You can change them yourself in a simple config.yml file. Right now it’s pretty basic, but it works, and I’m thinking of improving how the logs are organized maybe by player, by day, or some other way that makes it easier to track things. 
 
 Basically, it’s a simple tool for keeping chat clean and helping moderators stay on top of things without doing all the work themselves.
-- 🚫 **Banned Words/Phrases** – Easily configurable in `config.yml` just configure what words or phrases you want flagged. 
-- 👀 **Big Brother System** – Real-time notifications to moderators- This is the ingame notfication to server staff
-- 📜 **Logging** – Dated, timestamped, and player-tagged logs (Working on improving further)
+-  **Banned Words/Phrases** – Easily configurable in `config.yml` just configure what words or phrases you want flagged. 
+-  **Big Brother System** – Real-time notifications to moderators- This is the ingame notfication to server staff
+-  **Logging** – Dated, timestamped, and player-tagged logs (Working on improving further)
 
 
 ---
@@ -35,11 +35,19 @@ Basically, it’s a simple tool for keeping chat clean and helping moderators st
 
 <h2> Development Roadmap</h2>
 
-- 📂 Better log organization (per player, per day, or hybrid system)  
-- ⚠️ Configurable punishments (mute, kick, temp-ban)  
-- 🌐 Multi-language support  
-- 🔔 Webhook/Discord integration for remote notifications  
-- 🧩 API hooks for developers  
+-  Better log organization (per player, per day, or hybrid system)    
+-  API hooks for developers
+-  Staff Chat
+-  Private Messages
+-  Custom chat formatting
+-  Private Messages logging
+-  Warn/Kick/Mute System
+-  Discord Integration
+-  Chat Formatting & Prefixes
+-  Spy Mode
+-  Command Monitoring
+-  Player Notes System (server staff tool)
+  
 
 ---
 <h2> Contributing</h2>
