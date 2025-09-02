@@ -1,5 +1,5 @@
 name: chattracker
-version: 1.0-BigBrother
+version: 1.1.0
 main: yomikey.chattracker.Chattracker
 api-version: '1.21'
 
