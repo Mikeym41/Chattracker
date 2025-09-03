@@ -1,19 +1,21 @@
-name: chattracker
-version: 1.1.0
+name: ChatTracker
+version: 1.0
 main: yomikey.chattracker.Chattracker
-api-version: '1.21'
+api-version: 1.21
 
 commands:
   chattracker:
-    description: Test command for the ChatTracker plugin
-    usage: /chattracker
-
+    description: Check if ChatTracker is working
+    usage: /<command>
   staffchat:
-    description: Send a private message to all staff
-    usage: /staffchat <message>
-    aliases: [sc]
-
-permissions:
-  chattracker.staffchat:
-    description: Access to staff chat
-    default: op
+    description: Send a message to staff chat or toggle it
+    usage: /<command> [message]
+  setrank:
+    description: Set a player's rank in ChatTracker
+    usage: /setrank <player> <rank>
+  resetrank:
+    description: Reset a player's rank to default/config
+    usage: /resetrank <player>
+  report:
+    description: Report a chat message to staff
+    usage: /report <player> <message>

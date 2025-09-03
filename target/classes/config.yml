@@ -9,3 +9,51 @@ banned-words:
 
 alert-prefix: "§c⚠ [BigBrother]"   # Red text with warning symbol
 log-flagged-messages: true
+
+# Define ranks with prefixes, suffixes, colors, and group names
+ranks:
+  default:
+    group: default
+    prefix: "&7"
+    suffix: ""
+    color: "&f"
+    message-color: "&f"  # New
+  vip:
+    group: vip
+    prefix: "&6[VIP] "
+    suffix: ""
+    color: "&e"
+    message-color: "&e"
+  elite:
+    group: elite
+    prefix: "&5[ELITE] "
+    suffix: ""
+    color: "&d"
+    message-color: "&d"
+  moderator:
+    group: moderator
+    prefix: "&3[MOD] "
+    suffix: ""
+    color: "&b"
+    message-color: "&b"
+  admin:
+    group: admin
+    prefix: "&c[ADMIN] "
+    suffix: ""
+    color: "&c"
+    message-color: "&c"
+  owner:
+    group: owner
+    prefix: "&4[OWNER] "
+    suffix: "&r★"
+    color: "&4"
+    message-color: "&4"
+
+# Example usage:
+# A VIP player named Steve will appear as:
+# §6[VIP] §eSteve: message
+#
+# An Admin named Alex will appear as:
+# §c[ADMIN] §cAlex: message
+#
+# Staff chat uses the same formatting but prepends [StaffChat] and only shows to staff.

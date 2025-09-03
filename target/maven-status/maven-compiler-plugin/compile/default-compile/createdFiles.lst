@@ -1,2 +1,5 @@
 yomikey\chattracker\Chattracker$StaffChatCommand.class
+yomikey\chattracker\Chattracker$ResetRankCommand.class
+yomikey\chattracker\Chattracker$ReportCommand.class
 yomikey\chattracker\Chattracker.class
+yomikey\chattracker\Chattracker$SetRankCommand.class
