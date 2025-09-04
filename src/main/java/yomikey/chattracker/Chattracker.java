@@ -4,6 +4,7 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -52,6 +53,9 @@ public final class Chattracker extends JavaPlugin implements Listener {
 
         if (getCommand("report") != null)
             getCommand("report").setExecutor(new ReportCommand());
+
+        if (getCommand("punish") != null)
+            getCommand("punish").setExecutor(new PunishCommand());
     }
 
     @EventHandler
@@ -79,14 +83,14 @@ public final class Chattracker extends JavaPlugin implements Listener {
         String prefix = getConfig().getString("ranks." + group + ".prefix", "");
         String suffix = getConfig().getString("ranks." + group + ".suffix", "");
         String nameColor = getConfig().getString("ranks." + group + ".color", "&f");
-        String messageColor = getConfig().getString("ranks." + group + ".message-color", "&f"); // NEW
+        String messageColor = getConfig().getString("ranks." + group + ".message-color", "&f");
 
         // Full chat line with name coloring
         String fullMessage = ChatColor.translateAlternateColorCodes('&',
                 prefix + ChatColor.translateAlternateColorCodes('&', nameColor) + playerName + suffix + "&7: &r" +
                         ChatColor.translateAlternateColorCodes('&', messageColor) + message);
 
-        // Clickable hover message
+        // Clickable hover message for reports
         TextComponent chatComponent = new TextComponent(fullMessage);
         chatComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                 new ComponentBuilder("§cClick to report this message").create()));
@@ -257,10 +261,36 @@ public final class Chattracker extends JavaPlugin implements Listener {
             String reportedMessage = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
             String reportText = "§c[Report] " + player.getName() + " reported " + targetName + ": " + reportedMessage;
 
-            // Notify staff
+            // Notify staff with clickable punish options
             for (Player p : getServer().getOnlinePlayers()) {
                 if (p.hasPermission("chattracker.moderate")) {
-                    p.sendMessage(reportText);
+                    TextComponent msg = new TextComponent(reportText + " ");
+                    TextComponent warn = new TextComponent("[WARN]");
+                    warn.setColor(net.md_5.bungee.api.ChatColor.YELLOW);
+                    warn.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new ComponentBuilder("Click to WARN this player").create()));
+                    warn.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/punish " + targetName + " warn"));
+
+                    TextComponent kick = new TextComponent("[KICK]");
+                    kick.setColor(net.md_5.bungee.api.ChatColor.RED);
+                    kick.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new ComponentBuilder("Click to KICK this player").create()));
+                    kick.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/punish " + targetName + " kick"));
+
+                    TextComponent ban = new TextComponent("[BAN]");
+                    ban.setColor(net.md_5.bungee.api.ChatColor.DARK_RED);
+                    ban.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new ComponentBuilder("Click to BAN this player").create()));
+                    ban.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/punish " + targetName + " ban"));
+
+                    msg.addExtra(" ");
+                    msg.addExtra(warn);
+                    msg.addExtra(" ");
+                    msg.addExtra(kick);
+                    msg.addExtra(" ");
+                    msg.addExtra(ban);
+
+                    p.spigot().sendMessage(msg);
                 }
             }
 
@@ -279,6 +309,72 @@ public final class Chattracker extends JavaPlugin implements Listener {
 
             player.sendMessage("§aYour report has been submitted. Thank you!");
             return true;
+        }
+    }
+
+    private class PunishCommand implements CommandExecutor {
+        @Override
+        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("Only players can use this command.");
+                return true;
+            }
+            if (!player.hasPermission("chattracker.moderate")) {
+                player.sendMessage("§cYou don't have permission to punish players.");
+                return true;
+            }
+            if (args.length != 2) {
+                player.sendMessage("§eUsage: /punish <player> <warn/kick/ban>");
+                return true;
+            }
+
+            String targetName = args[0];
+            String action = args[1].toLowerCase();
+            Player target = Bukkit.getPlayerExact(targetName);
+
+            switch (action) {
+                case "warn":
+                    if (target != null) target.sendMessage("§cYou have been warned by staff.");
+                    player.sendMessage("§aYou warned " + targetName);
+                    logPunishment(player.getName(), targetName, "WARN");
+                    break;
+
+                case "kick":
+                    if (target != null) {
+                        target.kickPlayer("§cYou have been kicked by staff.");
+                        player.sendMessage("§aYou kicked " + targetName);
+                        logPunishment(player.getName(), targetName, "KICK");
+                    } else {
+                        player.sendMessage("§cPlayer not found.");
+                    }
+                    break;
+
+                case "ban":
+                    Bukkit.getBanList(org.bukkit.BanList.Type.NAME).addBan(targetName, "Banned by staff", null, player.getName());
+                    if (target != null) target.kickPlayer("§cYou have been banned by staff.");
+                    player.sendMessage("§aYou banned " + targetName);
+                    logPunishment(player.getName(), targetName, "BAN");
+                    break;
+
+                default:
+                    player.sendMessage("§cInvalid punishment type. Use warn, kick, or ban.");
+            }
+            return true;
+        }
+
+        private void logPunishment(String staffName, String targetName, String action) {
+            try {
+                File folder = new File(getDataFolder(), "punishments");
+                if (!folder.exists() && !folder.mkdirs()) getLogger().warning("Failed to create punishments folder!");
+                String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                File logFile = new File(folder, "punishments-" + date + ".txt");
+                try (FileWriter writer = new FileWriter(logFile, true)) {
+                    writer.write(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " - " +
+                            staffName + " " + action + " " + targetName + "\n");
+                }
+            } catch (IOException e) {
+                getLogger().severe("Error writing punishment log: " + e.getMessage());
+            }
         }
     }
 }
