@@ -1,21 +1,41 @@
 name: ChatTracker
-version: 1.2
+version: 1.0-SNAPSHOT
 main: yomikey.chattracker.Chattracker
 api-version: 1.21
 
 commands:
   chattracker:
-    description: Check if ChatTracker is working
-    usage: /<command>
+    description: Main plugin check command
+    usage: /chattracker
+    permission: chattracker.use
+    permission-message: "§cYou don't have permission to use this command."
+
   staffchat:
-    description: Send a message to staff chat or toggle it
-    usage: /<command> [message]
+    description: Send messages to staff chat or toggle it
+    usage: /staffchat [message]
+    permission: chattracker.staffchat
+    permission-message: "§cYou don't have permission to use Staff Chat."
+
   setrank:
-    description: Set a player's rank in ChatTracker
-    usage: /setrank <player> <rank>
+    description: Temporarily set a player's rank
+    usage: /setrank <player> <group>
+    permission: chattracker.setrank
+    permission-message: "§cYou don't have permission to set ranks."
+
   resetrank:
-    description: Reset a player's rank to default/config
+    description: Reset a player's temporary rank
     usage: /resetrank <player>
+    permission: chattracker.setrank
+    permission-message: "§cYou don't have permission to reset ranks."
+
   report:
-    description: Report a chat message to staff
+    description: Report a player message
     usage: /report <player> <message>
+    permission: chattracker.use
+    permission-message: "§cYou don't have permission to report players."
+
+  punish:
+    description: Punish a player (warn, kick, ban)
+    usage: /punish <player> <warn/kick/ban>
+    permission: chattracker.moderate
+    permission-message: "§cYou don't have permission to punish players."
