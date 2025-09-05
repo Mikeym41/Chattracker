@@ -37,13 +37,41 @@ ChatTracker helps staff stay on top of rule-breaking behavior efficiently and re
 <hr>
 
 ## Roadmap
-- Private Messages system.
-- Advanced log filtering and organization: per player, per day, or hybrid system.
-- Mute system integration.
-- Discord/Webhook integration for real-time notifications.
-- Player Notes System for staff.
-- Command monitoring and auditing for moderation transparency.
-- Enhanced hoverable messages with quick actions for reporting or moderation.
+Player Monitoring
+- /check <player> → Shows info (IP, alts, punishments, reports, last login).
+- /history <player> → See all punishments and reports tied to them.
+- /seen <player> → Last online time.
+
+Staff Utilities
+
+- CommandSpy → View commands players are running.
+- SocialSpy → View private messages between players.
+- /freeze <player> → Temporarily freeze a player for investigation.
+- Silent Join/Leave → Staff can log in/out without alerts.
+- Staff Mode → Special gamemode with inspector tools (teleport, vanish, freeze, randomTP).
+
+Punishment Enhancements
+
+- Timed Punishments → e.g., /ban <player> 7d <reason>.
+- Mute System → Temporary/permanent mute with reasons.
+- Warning Escalation → X warnings = auto mute/ban.
+- Appeals Log → Optional system to mark punishments as appealed.
+
+Logs & Analytics
+- MySQL / SQLite support → Store punishments/reports in a database.
+- Web Panel support → Optional frontend for staff to review punishments/reports.
+- Export Logs → Generate staff activity reports weekly/monthly.
+
+Player Protection
+- Anti-Alt Detection → Alert staff if players with the same IP join.
+- VPN/Proxy detection → Optional alerts if suspicious connections are used.
+- Chat Filter → Block certain words with staff alerts (already partly in).
+
+Quality of Life
+- Clickable Teleports in reports (click player name to teleport).
+- Customizable GUI Menus (e.g., for punishments, staff tools).
+- Integration with LuckPerms for rank syncing.
+- Discord Integration → Send reports & punishments to a staff Discord channel.
 
 <hr>
 
