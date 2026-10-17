@@ -1,12 +1,13 @@
 name: ChatTracker
-version: 1.3.0
+version: ${project.version}
 main: yomikey.chattracker.Chattracker
 api-version: 1.21
+softdepend: [LuckPerms]
 
 commands:
   chattracker:
-    description: Main plugin check command
-    usage: /chattracker
+    description: Show ChatTracker status, or reload the config
+    usage: /chattracker [reload]
     permission: chattracker.use
     permission-message: "§cYou don't have permission to use this command."
 
@@ -17,14 +18,14 @@ commands:
     permission-message: "§cYou don't have permission to use Staff Chat."
 
   setrank:
-    description: Temporarily set a player's rank
-    usage: /setrank <player> <group>
+    description: Temporarily put a player in a group (uses LuckPerms when installed)
+    usage: /setrank <player> <group> [duration]
     permission: chattracker.setrank
     permission-message: "§cYou don't have permission to set ranks."
 
   resetrank:
-    description: Reset a player's temporary rank
-    usage: /resetrank <player>
+    description: Remove a player's temporary group(s)
+    usage: /resetrank <player> [group]
     permission: chattracker.setrank
     permission-message: "§cYou don't have permission to reset ranks."
 
@@ -39,3 +40,33 @@ commands:
     usage: /punish <player> <warn/kick/ban>
     permission: chattracker.moderate
     permission-message: "§cYou don't have permission to punish players."
+
+permissions:
+  chattracker.use:
+    description: Use /chattracker and report messages
+    default: true
+  chattracker.chatcolor:
+    description: Use '&' color codes in your own chat messages
+    default: op
+  chattracker.view:
+    description: View tracked chat logs
+    default: op
+  chattracker.moderate:
+    description: Receive flagged-message alerts and reports, and issue punishments
+    default: op
+  chattracker.staffchat:
+    description: Use Staff Chat
+    default: op
+  chattracker.setrank:
+    description: Give and remove temporary ranks
+    default: op
+  chattracker.admin:
+    description: Full access, including /chattracker reload
+    default: op
+    children:
+      chattracker.use: true
+      chattracker.chatcolor: true
+      chattracker.view: true
+      chattracker.moderate: true
+      chattracker.staffchat: true
+      chattracker.setrank: true
