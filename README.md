@@ -16,7 +16,7 @@
 **Staff Chat** lets moderators communicate privately without interfering with public chat.  
 **Hoverable and clickable reports** allow players to report inappropriate messages in-game directly to staff.  
 
-**New in v1.3**: Staff can now issue **clickable punishments (Warn, Kick, Ban)** directly from reports, with all punishments logged for transparency.  
+**New in v1.4**: **LuckPerms integration**. Rank prefixes, suffixes, and colors come straight from LuckPerms, and `/setrank` creates real temporary ranks that expire on their own.  
 
 ChatTracker helps staff stay on top of rule-breaking behavior efficiently and reliably, with enhanced message formatting to make chat clear and readable.
 
@@ -24,13 +24,14 @@ ChatTracker helps staff stay on top of rule-breaking behavior efficiently and re
 
 ## Features
 - Tracks all player chat messages in real time.
-- Color-coded chat for ranks, messages stand out according to group.
+- **LuckPerms integration** – prefixes, suffixes, and name/message colors pulled from LuckPerms (optional; config.yml ranks work without it).
+- Color-coded chat for ranks, including hex colors (`&#RRGGBB`).
 - Hoverable and clickable reports to quickly flag inappropriate messages.
 - **Clickable punishments** (Warn, Kick, Ban) with full logging.
 - Logs all messages, reports, and punishments with timestamps for staff review.
 - Flags inappropriate messages automatically using the Big Brother system.
 - **Staff Chat** – private channel for moderators, fully implemented with toggle functionality.
-- Temporary rank overrides with commands for testing or promotions.
+- Temporary ranks (`/setrank vip 7d`) that expire automatically via LuckPerms.
 - Lightweight and optimized for performance.
 - Easy setup with minimal configuration required.
 
@@ -95,8 +96,8 @@ Quality of Life
 <hr>
 
 ## Installation
-1. Download the latest release from [GitHub Releases](https://github.com/Mikeym41/Chattracker/releases).
-2. Place the `ChatTracker.jar` file into your server's `/plugins` folder.
+1. Download the latest version from [Modrinth](https://modrinth.com/plugin/chattracker) or [GitHub Releases](https://github.com/Mikeym41/Chattracker/releases).
+2. Place the ChatTracker `.jar` file into your server's `/plugins` folder.
 3. Restart your server.
 4. Configuration files will be generated automatically on first run.
 
@@ -133,7 +134,6 @@ Without LuckPerms, ChatTracker uses the `ranks` section of `config.yml` exactly 
 ## Commands
 - `/chattracker` – Shows the version and which rank source is active.
 - `/chattracker reload` – Reloads the configuration and re-checks LuckPerms.
-- `/chattracker logs` – Displays recent chat logs in-game.
 - `/staffchat <message>` – Sends a message to all online staff (toggle functionality included).
 - `/setrank <player> <group> [duration]` – Temporarily puts a player in a group. With LuckPerms this is a real temporary group (e.g. `30m`, `2h`, `7d`, `1d12h`; default set in config).
 - `/resetrank <player> [group]` – Removes a player's temporary group(s). Permanent groups are never touched.
