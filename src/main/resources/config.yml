@@ -10,7 +10,25 @@ banned-words:
 alert-prefix: "§c⚠ [BigBrother]"   # Red text with warning symbol
 log-flagged-messages: true
 
+# ------------------------------------------------------------------
+# LuckPerms integration (used automatically when LuckPerms is installed)
+# ------------------------------------------------------------------
+# Chat formatting is read from the player's LuckPerms data:
+#   prefix / suffix  -> LuckPerms prefix/suffix (e.g. /lp group vip meta addprefix 100 "&6[VIP] ")
+#   name color       -> meta key "name-color"    (e.g. /lp group vip meta set name-color &e)
+#   message color    -> meta key "message-color" (e.g. /lp group vip meta set message-color &e)
+# Anything LuckPerms doesn't set falls back to the "ranks" section below,
+# matched by the player's LuckPerms primary group name.
+# Hex colors like &#FF8800 work everywhere.
+luckperms:
+  enabled: true
+  # false = keep using prefixes/suffixes from the ranks section even with LuckPerms
+  use-prefixes: true
+  # How long /setrank lasts when no duration is given (30m, 2h, 7d, 1d12h...)
+  setrank-default-duration: "1h"
+
 # Define ranks with prefixes, suffixes, colors, and group names
+# (used when LuckPerms isn't installed, and as a fallback for LuckPerms groups)
 ranks:
   default:
     group: default

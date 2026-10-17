@@ -5,16 +5,22 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import yomikey.chattracker.rank.ConfigRankProvider;
+import yomikey.chattracker.rank.DurationParser;
+import yomikey.chattracker.rank.LuckPermsRankProvider;
+import yomikey.chattracker.rank.RankInfo;
+import yomikey.chattracker.rank.RankProvider;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -22,40 +28,58 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public final class Chattracker extends JavaPlugin implements Listener {
 
     private final Set<UUID> staffChatToggled = new HashSet<>();
-    private final Map<String, String> tempRanks = new HashMap<>();
+
+    private ConfigRankProvider configRanks;
+    /** Null when LuckPerms isn't installed or is turned off in config.yml. */
+    private LuckPermsRankProvider luckPermsRanks;
 
     @Override
     public void onEnable() {
-        getLogger().info("ChatTracker enabled!");
-
         getServer().getPluginManager().registerEvents(this, this);
         saveDefaultConfig();
+        configRanks = new ConfigRankProvider(this);
+        setupRankProvider();
 
-        // Register commands
-        if (getCommand("chattracker") != null)
-            getCommand("chattracker").setExecutor((sender, command, label, args) -> {
-                sender.sendMessage("§aChatTracker is working!");
-                return true;
-            });
+        registerCommand("chattracker", new MainCommand(), null);
+        registerCommand("staffchat", new StaffChatCommand(), null);
+        registerCommand("setrank", new SetRankCommand(), new RankTabCompleter(true));
+        registerCommand("resetrank", new ResetRankCommand(), new RankTabCompleter(false));
+        registerCommand("report", new ReportCommand(), null);
+        registerCommand("punish", new PunishCommand(), null);
 
-        if (getCommand("staffchat") != null)
-            getCommand("staffchat").setExecutor(new StaffChatCommand());
+        getLogger().info("ChatTracker enabled! Rank source: " + activeRanks().name());
+    }
 
-        if (getCommand("setrank") != null)
-            getCommand("setrank").setExecutor(new SetRankCommand());
+    private void registerCommand(String name, CommandExecutor executor, TabCompleter completer) {
+        PluginCommand command = getCommand(name);
+        if (command == null) return;
+        command.setExecutor(executor);
+        if (completer != null) command.setTabCompleter(completer);
+    }
 
-        if (getCommand("resetrank") != null)
-            getCommand("resetrank").setExecutor(new ResetRankCommand());
+    /** Hooks into LuckPerms if it's installed and enabled in config, otherwise uses config.yml ranks. */
+    private void setupRankProvider() {
+        luckPermsRanks = null;
+        boolean wanted = getConfig().getBoolean("luckperms.enabled", true);
+        boolean installed = getServer().getPluginManager().isPluginEnabled("LuckPerms");
 
-        if (getCommand("report") != null)
-            getCommand("report").setExecutor(new ReportCommand());
+        if (wanted && installed) {
+            luckPermsRanks = LuckPermsRankProvider.create(this);
+            if (luckPermsRanks == null) {
+                getLogger().warning("LuckPerms is installed but its API isn't available. Falling back to config.yml ranks.");
+            }
+        } else if (wanted) {
+            getLogger().info("LuckPerms not found. Using ranks from config.yml.");
+        }
+    }
 
-        if (getCommand("punish") != null)
-            getCommand("punish").setExecutor(new PunishCommand());
+    private RankProvider activeRanks() {
+        return luckPermsRanks != null ? luckPermsRanks : configRanks;
     }
 
     @EventHandler
@@ -77,21 +101,12 @@ public final class Chattracker extends JavaPlugin implements Listener {
         }
 
         // ====== CHAT FORMATTING ======
-        String group = tempRanks.getOrDefault(playerName.toLowerCase(),
-                getConfig().getString("ranks." + playerName.toLowerCase() + ".group", "default"));
-
-        String prefix = getConfig().getString("ranks." + group + ".prefix", "");
-        String suffix = getConfig().getString("ranks." + group + ".suffix", "");
-        String nameColor = getConfig().getString("ranks." + group + ".color", "&f");
-        String messageColor = getConfig().getString("ranks." + group + ".message-color", "&f");
-
-        // Full chat line with name coloring
-        String fullMessage = ChatColor.translateAlternateColorCodes('&',
-                prefix + ChatColor.translateAlternateColorCodes('&', nameColor) + playerName + suffix + "&7: &r" +
-                        ChatColor.translateAlternateColorCodes('&', messageColor) + message);
+        RankInfo rank = activeRanks().resolve(player);
+        String fullMessage = formatName(player, rank) + "§7: §r"
+                + ColorUtil.colorize(rank.messageColor()) + playerText(player, message);
 
         // Clickable hover message for reports
-        TextComponent chatComponent = new TextComponent(fullMessage);
+        TextComponent chatComponent = new TextComponent(TextComponent.fromLegacyText(fullMessage));
         chatComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                 new ComponentBuilder("§cClick to report this message").create()));
         chatComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
@@ -103,6 +118,18 @@ public final class Chattracker extends JavaPlugin implements Listener {
         // Logging
         logMessage(playerName, message);
         checkFlaggedWords(player, message);
+    }
+
+    /** prefix + colored name + suffix, all colorized. */
+    private String formatName(Player player, RankInfo rank) {
+        return ColorUtil.colorize(rank.prefix())
+                + ColorUtil.colorize(rank.nameColor()) + player.getName()
+                + ColorUtil.colorize(rank.suffix());
+    }
+
+    /** Players only get '&' color codes in their own messages with chattracker.chatcolor. */
+    private String playerText(Player player, String message) {
+        return player.hasPermission("chattracker.chatcolor") ? ColorUtil.colorize(message) : message;
     }
 
     private void logMessage(String playerName, String message) {
@@ -149,25 +176,49 @@ public final class Chattracker extends JavaPlugin implements Listener {
     }
 
     private void sendStaffChatMessage(Player sender, String message) {
-        String group = tempRanks.getOrDefault(sender.getName().toLowerCase(),
-                getConfig().getString("ranks." + sender.getName().toLowerCase() + ".group", "default"));
-        String prefix = getConfig().getString("ranks." + group + ".prefix", "");
-        String suffix = getConfig().getString("ranks." + group + ".suffix", "");
-        String colorCode = getConfig().getString("ranks." + group + ".color", "&f");
-
-        String fullMessage = ChatColor.translateAlternateColorCodes('&',
-                "§8[§bStaffChat§8] " + prefix + ChatColor.translateAlternateColorCodes('&', colorCode)
-                        + sender.getName() + suffix + "§7: §f" + message);
+        RankInfo rank = activeRanks().resolve(sender);
+        String fullMessage = "§8[§bStaffChat§8] " + formatName(sender, rank) + "§7: §f" + playerText(sender, message);
 
         for (Player p : getServer().getOnlinePlayers()) {
             if (p.hasPermission("chattracker.staffchat")) {
-                p.sendMessage(fullMessage);
+                p.spigot().sendMessage(TextComponent.fromLegacyText(fullMessage));
             }
         }
         getLogger().info("[StaffChat] " + sender.getName() + ": " + message);
     }
 
+    /** LuckPerms finishes its work off the main thread; send the result back on it. */
+    private void replyWhenDone(CommandSender sender, CompletableFuture<String> result) {
+        result.whenComplete((text, error) -> Bukkit.getScheduler().runTask(this, () -> {
+            if (error != null) {
+                sender.sendMessage("§cLuckPerms error: " + error.getMessage());
+                getLogger().warning("LuckPerms operation failed: " + error);
+            } else {
+                sender.sendMessage(text);
+            }
+        }));
+    }
+
     // ----- Commands -----
+    private class MainCommand implements CommandExecutor {
+        @Override
+        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+            if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+                if (!sender.hasPermission("chattracker.admin")) {
+                    sender.sendMessage("§cYou don't have permission to reload ChatTracker.");
+                    return true;
+                }
+                reloadConfig();
+                setupRankProvider();
+                sender.sendMessage("§aChatTracker reloaded. Rank source: §e" + activeRanks().name());
+                return true;
+            }
+            sender.sendMessage("§aChatTracker " + getDescription().getVersion()
+                    + " is working! Rank source: §e" + activeRanks().name());
+            return true;
+        }
+    }
+
     private class StaffChatCommand implements CommandExecutor {
         @Override
         public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -198,27 +249,45 @@ public final class Chattracker extends JavaPlugin implements Listener {
     private class SetRankCommand implements CommandExecutor {
         @Override
         public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-            if (!(sender instanceof Player player)) {
-                sender.sendMessage("Only players can use this command.");
-                return true;
-            }
-            if (!player.hasPermission("chattracker.setrank")) {
-                player.sendMessage("§cYou don't have permission to use this command.");
-                return true;
-            }
-            if (args.length != 2) {
-                player.sendMessage("§eUsage: /setrank <player> <group>");
+            if (!sender.hasPermission("chattracker.setrank")) {
+                sender.sendMessage("§cYou don't have permission to use this command.");
                 return true;
             }
 
-            String target = args[0].toLowerCase();
-            String group = args[1].toLowerCase();
-            if (!getConfig().getConfigurationSection("ranks").getKeys(false).contains(group)) {
-                player.sendMessage("§cThat group does not exist!");
+            // ----- LuckPerms: real temporary group that expires on its own -----
+            if (luckPermsRanks != null) {
+                if (args.length < 2 || args.length > 3) {
+                    sender.sendMessage("§eUsage: /setrank <player> <group> [duration, e.g. 30m, 2h, 7d]");
+                    return true;
+                }
+                String group = args[1].toLowerCase();
+                if (!luckPermsRanks.groupExists(group)) {
+                    sender.sendMessage("§cLuckPerms has no group named " + group + ".");
+                    return true;
+                }
+                String durationText = args.length == 3 ? args[2]
+                        : getConfig().getString("luckperms.setrank-default-duration", "1h");
+                long seconds = DurationParser.parseSeconds(durationText);
+                if (seconds <= 0) {
+                    sender.sendMessage("§cInvalid duration: " + durationText + ". Try 30m, 2h, 7d or 1d12h.");
+                    return true;
+                }
+                replyWhenDone(sender, luckPermsRanks.addTemporaryGroup(args[0], group, seconds));
                 return true;
             }
-            tempRanks.put(target, group);
-            player.sendMessage("§a" + target + " is now temporarily in group: " + group);
+
+            // ----- No LuckPerms: original in-memory override -----
+            if (args.length != 2) {
+                sender.sendMessage("§eUsage: /setrank <player> <group>");
+                return true;
+            }
+            String group = args[1].toLowerCase();
+            if (!configRanks.groupNames().contains(group)) {
+                sender.sendMessage("§cThat group does not exist!");
+                return true;
+            }
+            configRanks.setTempRank(args[0], group);
+            sender.sendMessage("§a" + args[0] + " is now temporarily in group: " + group);
             return true;
         }
     }
@@ -226,22 +295,54 @@ public final class Chattracker extends JavaPlugin implements Listener {
     private class ResetRankCommand implements CommandExecutor {
         @Override
         public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-            if (!(sender instanceof Player player)) {
-                sender.sendMessage("Only players can use this command.");
-                return true;
-            }
-            if (!player.hasPermission("chattracker.setrank")) {
-                player.sendMessage("§cYou don't have permission to use this command.");
-                return true;
-            }
-            if (args.length != 1) {
-                player.sendMessage("§eUsage: /resetrank <player>");
+            if (!sender.hasPermission("chattracker.setrank")) {
+                sender.sendMessage("§cYou don't have permission to use this command.");
                 return true;
             }
 
-            tempRanks.remove(args[0].toLowerCase());
-            player.sendMessage("§a" + args[0] + " has been reset to their config-defined rank.");
+            if (luckPermsRanks != null) {
+                if (args.length < 1 || args.length > 2) {
+                    sender.sendMessage("§eUsage: /resetrank <player> [group]");
+                    return true;
+                }
+                String group = args.length == 2 ? args[1].toLowerCase() : null;
+                replyWhenDone(sender, luckPermsRanks.removeTemporaryGroups(args[0], group));
+                return true;
+            }
+
+            if (args.length != 1) {
+                sender.sendMessage("§eUsage: /resetrank <player>");
+                return true;
+            }
+            configRanks.clearTempRank(args[0]);
+            sender.sendMessage("§a" + args[0] + " has been reset to their config-defined rank.");
             return true;
+        }
+    }
+
+    /** Suggests online players for the first argument and group names for the second. */
+    private class RankTabCompleter implements TabCompleter {
+        private final boolean suggestDurations;
+
+        RankTabCompleter(boolean suggestDurations) {
+            this.suggestDurations = suggestDurations;
+        }
+
+        @Override
+        public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+            if (!sender.hasPermission("chattracker.setrank")) return Collections.emptyList();
+            if (args.length == 1) return null; // Bukkit fills in online player names
+
+            Collection<String> options;
+            if (args.length == 2) {
+                options = luckPermsRanks != null ? luckPermsRanks.groupNames() : configRanks.groupNames();
+            } else if (args.length == 3 && suggestDurations && luckPermsRanks != null) {
+                options = List.of("30m", "1h", "12h", "1d", "7d", "30d");
+            } else {
+                return Collections.emptyList();
+            }
+            String typed = args[args.length - 1].toLowerCase();
+            return options.stream().filter(o -> o.toLowerCase().startsWith(typed)).toList();
         }
     }
 
@@ -378,9 +479,3 @@ public final class Chattracker extends JavaPlugin implements Listener {
         }
     }
 }
-
-
-
-
-
-

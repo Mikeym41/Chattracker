@@ -70,7 +70,6 @@ Player Protection
 Quality of Life
 - Clickable Teleports in reports (click player name to teleport).
 - Customizable GUI Menus (e.g., for punishments, staff tools).
-- Integration with LuckPerms for rank syncing.
 - Discord Integration → Send reports & punishments to a staff Discord channel.
 
 <hr>
@@ -103,21 +102,41 @@ Quality of Life
 
 <hr>
 
+## LuckPerms Integration
+ChatTracker hooks into [LuckPerms](https://luckperms.net) automatically when it's installed. No extra setup is needed.
+
+- **Prefixes & suffixes** come straight from LuckPerms, including hex colors like `&#FF8800`.
+- **Name and message colors** can be set per group with LuckPerms meta:
+  ```
+  /lp group vip meta addprefix 100 "&6[VIP] "
+  /lp group vip meta set name-color &e
+  /lp group vip meta set message-color &e
+  ```
+- Anything LuckPerms doesn't set falls back to the `ranks` section of `config.yml`, matched by the player's primary group.
+- **`/setrank` creates real LuckPerms temporary groups** that expire on their own, survive restarts, and sync across a network.
+
+Without LuckPerms, ChatTracker uses the `ranks` section of `config.yml` exactly as before. Set `luckperms.enabled: false` to ignore LuckPerms even when it's installed.
+
+<hr>
+
 ## Permissions
+- `chattracker.use` – Use `/chattracker` and report messages (everyone by default).
+- `chattracker.chatcolor` – Use `&` color codes in your own chat messages.
 - `chattracker.view` – Allows viewing tracked chat logs.
 - `chattracker.moderate` – Allows receiving flagged message alerts, reports, and issuing punishments.
 - `chattracker.staffchat` – Access to the completed Staff Chat channel.
 - `chattracker.setrank` – Allows temporary rank changes.
-- `chattracker.admin` – Full access to ChatTracker commands.
+- `chattracker.admin` – Full access to ChatTracker commands, including reload.
 
 <hr>
 
 ## Commands
-- `/chattracker reload` – Reloads the configuration.
+- `/chattracker` – Shows the version and which rank source is active.
+- `/chattracker reload` – Reloads the configuration and re-checks LuckPerms.
 - `/chattracker logs` – Displays recent chat logs in-game.
 - `/staffchat <message>` – Sends a message to all online staff (toggle functionality included).
-- `/setrank <player> <group>` – Temporarily sets a player's rank.
-- `/resetrank <player>` – Resets a player to their config-defined rank.
+- `/setrank <player> <group> [duration]` – Temporarily puts a player in a group. With LuckPerms this is a real temporary group (e.g. `30m`, `2h`, `7d`, `1d12h`; default set in config).
+- `/resetrank <player> [group]` – Removes a player's temporary group(s). Permanent groups are never touched.
 - `/report <player> <message>` – Report a message in-game (clickable through hoverable chat).
 - `/punish <player> <warn|kick|ban>` – Issue punishments (clickable buttons also available).
 
@@ -125,7 +144,16 @@ Quality of Life
 
 ## Changelog
 
-### v1.3 (Current Release)
+### v1.4 (Current Release)
+- **LuckPerms integration**: prefixes, suffixes, and colors come from LuckPerms when installed.
+- `/setrank` creates real LuckPerms temporary groups with a duration; `/resetrank` removes them.
+- Hex color support (`&#RRGGBB`) in prefixes, suffixes, and colors.
+- Tab completion for groups and durations.
+- `/chattracker reload` added; setrank/resetrank now work from console.
+- Players can no longer use color codes in chat without `chattracker.chatcolor`.
+- `/report` now works for regular players by default.
+
+### v1.3
 - **Clickable punishments (Warn, Kick, Ban)** added.
 - Full punishment logging implemented.
 - Expanded logging system for chat, reports, and punishments.
@@ -153,6 +181,7 @@ Quality of Life
 
 ##  Dependencies
 **PaperMC** (latest recommended build). No additional plugins required.
+**LuckPerms** (optional) for rank prefixes, colors, and temporary groups.
 
 <hr>
 
